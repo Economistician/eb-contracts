@@ -35,7 +35,7 @@ It is important to be explicit about boundaries.
 - Transform raw source data end-to-end
 
 Those responsibilities live in other repositories (e.g. adapters, metrics,
-evaluation, optimization).  
+evaluation, optimization).
 This repo exists purely to define and enforce *interfaces* between them.
 
 ---
