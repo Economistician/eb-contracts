@@ -13,6 +13,10 @@ import pandas as pd
 from eb_contracts.costs.v1 import (
     CostAsymmetrySpecV1,
 )
+from eb_contracts.demand.v1 import (
+    PanelDemandV1,
+    validate_panel_demand_v1,
+)
 from eb_contracts.forecast.v1 import (
     PanelPointForecastV1,
     PanelQuantileForecastV1,
@@ -24,6 +28,11 @@ from eb_contracts.results.v1 import (
 ######################################
 # Public API
 ######################################
+
+
+def panel_demand_v1(panel: PanelDemandV1) -> None:
+    """Validate a V1 demand panel artifact."""
+    validate_panel_demand_v1(panel)
 
 
 def panel_point_v1(frame: pd.DataFrame) -> PanelPointForecastV1:
