@@ -3,6 +3,18 @@ PanelDemandV1 contract.
 
 A domain-agnostic, governance-aware demand panel contract intended to support forecasting,
 DQC, FPC/RAL diagnostics, and cost-aware evaluation.
+
+Core principles
+---------------
+- Identity (keys) and time indexing must be present and well-formed.
+- Governance gates are **nullable booleans** with domain {True, False, NA}.
+- Targets are numeric when present and nonnegative.
+- Structural impossibility implies non-trainability (minimal universal semantic):
+  - structural_zero == True => y must be NA
+  - structural_zero == True => is_observable must not be True
+
+This contract intentionally avoids domain-specific policy (e.g., "observable implies y is present").
+Such rules can be enforced upstream or via domain-specific adapters.
 """
 
 from __future__ import annotations
@@ -76,19 +88,44 @@ class PanelDemandV1:
         return obj
 
 
+def _assert_nullable_bool_series(s: pd.Series, *, name: str) -> None:
+    """
+    Require that values are in {True, False, NA}.
+
+    Accepts:
+    - bool dtype
+    - pandas nullable boolean dtype ("boolean")
+    - object dtype containing only bools + nulls
+
+    This is stricter than "castable-to-bool" and preserves governance semantics
+    for tri-state gates (unknown vs false).
+    """
+    if s.dtype == bool or str(s.dtype) == "boolean":
+        return
+
+    nn = s.dropna()
+    if nn.empty:
+        return
+
+    bad = ~nn.map(lambda v: isinstance(v, bool))
+    if bool(bad.any()):
+        raise ValueError(f"Gate column {name!r} must contain only True/False/NA values.")
+
+
 def validate_panel_demand_v1(panel: PanelDemandV1) -> None:
     """Validate a PanelDemandV1 instance.
 
     Validation is semantic (governance-aware) and designed to prevent misuse:
     - Keys and time index must exist
-    - Gates must exist and be boolean/castable-to-bool
+    - Gates must exist and be nullable booleans with domain {True, False, NA}
     - y must be numeric when present and nonnegative
     - time must be well-formed per mode
+    - structural impossibility implies non-trainability (minimal universal semantic)
 
     Notes:
     - We intentionally keep this validator minimal and deterministic.
-    - Monotonicity checks may be added later (or made configurable) to avoid
-      over-constraining datasets that rely on scaffolds or sparse windows.
+    - Monotonicity and uniqueness checks may be added later (or made configurable)
+      to avoid over-constraining datasets that rely on scaffolds or sparse windows.
     """
     df = panel.frame
 
@@ -116,6 +153,10 @@ def validate_panel_demand_v1(panel: PanelDemandV1) -> None:
                 "time_mode='day_interval' requires interval_minutes and periods_per_day."
             )
 
+        # Optional timestamp column is allowed for debugging/joins even in day_interval mode.
+        if panel.ts_col:
+            required.append(panel.ts_col)
+
     else:
         raise ValueError(f"Unrecognized time_mode: {panel.time_mode!r}")
 
@@ -123,20 +164,33 @@ def validate_panel_demand_v1(panel: PanelDemandV1) -> None:
     if missing:
         raise ValueError(f"Missing required columns: {missing}")
 
-    # --- gates: boolean / castable-to-bool
-    for gate_col in (panel.is_observable_col, panel.is_possible_col, panel.is_structural_zero_col):
-        s = df[gate_col]
-        if s.dtype == bool:
-            continue
-        try:
-            _ = s.map(bool)  # validation only
-        except Exception as e:  # pragma: no cover
-            raise ValueError(f"Gate column {gate_col!r} must be boolean/castable-to-bool.") from e
+    # --- gates: nullable boolean domain (True/False/NA)
+    #
+    # NOTE: We explicitly coerce to Series for Pyright. Pandas typing can infer df[col]
+    # as Series | DataFrame | Unknown depending on key typing, even when "col" is str.
+    _assert_nullable_bool_series(
+        pd.Series(df.loc[:, panel.is_observable_col]),
+        name=panel.is_observable_col,
+    )
+    _assert_nullable_bool_series(
+        pd.Series(df.loc[:, panel.is_possible_col]),
+        name=panel.is_possible_col,
+    )
+    _assert_nullable_bool_series(
+        pd.Series(df.loc[:, panel.is_structural_zero_col]),
+        name=panel.is_structural_zero_col,
+    )
 
     # --- target: numeric when present, nonnegative
-    y = pd.to_numeric(df[panel.y_col], errors="coerce")
-    y_series = pd.Series(y)  # Ensure it's a Series
-    if (y_series.dropna() < 0).any():  # Ensure dropna and comparison are on Series
+    y_raw = df[panel.y_col]
+    y = pd.to_numeric(y_raw, errors="coerce")
+    y_series = pd.Series(y, index=y_raw.index)
+
+    # If non-null originals became NaN after coercion => non-numeric values present.
+    if bool(y_raw.notna().any()) and bool((y_series.isna() & y_raw.notna()).any()):
+        raise ValueError(f"Target column {panel.y_col!r} must be numeric where present.")
+
+    if bool((y_series.dropna() < 0).any()):
         raise ValueError(f"Target column {panel.y_col!r} contains negative values.")
 
     # --- day/interval mode checks
@@ -144,23 +198,42 @@ def validate_panel_demand_v1(panel: PanelDemandV1) -> None:
         if panel.periods_per_day is None:
             raise ValueError("periods_per_day must be provided for time_mode='day_interval'.")
 
-        idx = pd.to_numeric(df[panel.interval_index_col], errors="coerce")
-        idx_series = pd.Series(idx)  # Ensure idx is a Series
-        if idx_series.isna().any():  # Ensure isna is called on a Series
+        idx_raw = df[panel.interval_index_col]
+        idx = pd.to_numeric(idx_raw, errors="coerce")
+        idx_series = pd.Series(idx, index=idx_raw.index)
+
+        # Disallow non-numeric junk where provided
+        if bool((idx_series.isna() & idx_raw.notna()).any()):
             raise ValueError(
                 f"interval_index_col {panel.interval_index_col!r} must be integer-like."
             )
 
-        if (
-            (idx_series < 0) | (idx_series >= panel.periods_per_day)
-        ).any():  # Handle comparison on Series
+        nn = idx_series.dropna()
+        if bool(((nn < 0) | (nn >= panel.periods_per_day)).any()):
             raise ValueError(
                 f"interval_index_col {panel.interval_index_col!r} must be in "
                 f"[0, {panel.periods_per_day - 1}]."
             )
 
-    # --- timestamp mode checks
-    if panel.time_mode == "timestamp":
+        day = pd.to_datetime(df[panel.day_col], errors="coerce").dt.date
+        if bool(pd.Series(day, index=df.index).isna().any()):
+            raise ValueError(f"day_col {panel.day_col!r} must be date-like (parsable).")
+
+    # --- timestamp mode checks (or optional timestamp column)
+    if panel.ts_col:
         ts = pd.to_datetime(df[panel.ts_col], errors="coerce")
-        if ts.isna().any():  # Ensure isna is called on a Series
+        if bool(pd.Series(ts, index=df.index).isna().any()):
             raise ValueError(f"ts_col {panel.ts_col!r} must be datetime-like (parsable).")
+
+    # --- minimal governance semantics (agnostic)
+    structural = df[panel.is_structural_zero_col]
+    observable = df[panel.is_observable_col]
+
+    # Structural impossibility => non-trainable: y must be null
+    mask = structural == True  # noqa: E712 (explicit tri-state check)
+    if bool(mask.any()) and bool(y_series.loc[mask].notna().any()):
+        raise ValueError("Structural-zero intervals must have null targets (y).")
+
+    # Structural zero should not be marked observable
+    if bool(mask.any()) and bool((observable.loc[mask] == True).any()):  # noqa: E712
+        raise ValueError("Structural-zero intervals must not be marked observable.")
