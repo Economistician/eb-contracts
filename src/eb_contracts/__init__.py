@@ -7,14 +7,15 @@ forecasting and panel-based evaluation.
 
 from __future__ import annotations
 
-######################################
-# Public API
-######################################
-from eb_contracts._runtime import set_validation_mode
-from eb_contracts.validate import (
+from eb_contracts.api.validate import (
     panel_point_v1,
     panel_quantile_v1,
 )
+
+######################################
+# Public API
+######################################
+from eb_contracts.contracts._internal.runtime import set_validation_mode
 
 __all__ = [
     "panel_point_v1",
