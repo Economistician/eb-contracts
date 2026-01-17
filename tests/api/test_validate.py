@@ -3,6 +3,7 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
+from eb_contracts.api import validate as validate_module
 from eb_contracts.api.validate import (
     panel_demand_v1,
     panel_point_v1,
@@ -144,6 +145,29 @@ def test_panel_demand_v1_strict_raises_on_invalid_panel() -> None:
     panel = _panel_demand_minimal(missing_required=True)
     with set_validation_mode("strict"), pytest.raises(ValueError):
         panel_demand_v1(panel)
+
+
+######################################
+# Entry points: public API aliases
+######################################
+
+
+def test_panel_point_forecast_v1_alias_delegates_to_panel_point_v1(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Public API stability: panel_point_forecast_v1 should exist and delegate
+    to panel_point_v1 (no re-implementation).
+    """
+    sentinel = object()
+
+    def _fake(_: pd.DataFrame) -> object:
+        return sentinel
+
+    monkeypatch.setattr(validate_module, "panel_point_v1", _fake)
+
+    out = validate_module.panel_point_forecast_v1(pd.DataFrame())
+    assert out is sentinel
 
 
 ######################################

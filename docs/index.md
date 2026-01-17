@@ -17,13 +17,13 @@ It intentionally avoids implementing metrics, models, optimization logic, or wor
 
 ## Contents
 
-- **Core contracts**  
+- **Core contracts**
   Canonical representations for forecasts, results, costs, and runtime context
 
-- **Validation utilities**  
+- **Validation utilities**
   Tools for checking contract conformance and structural integrity
 
-- **Migration support**  
+- **Migration support**
   Helpers for evolving contracts across versions
 
 ## API reference

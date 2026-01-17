@@ -40,6 +40,16 @@ def panel_point_v1(frame: pd.DataFrame) -> PanelPointForecastV1:
     return PanelPointForecastV1.from_frame(frame)
 
 
+def panel_point_forecast_v1(frame: pd.DataFrame) -> PanelPointForecastV1:
+    """
+    Validate and construct a V1 panel point forecast artifact.
+
+    This is an alias for `panel_point_v1` intended to provide a clearer,
+    more discoverable entrypoint for downstream ecosystem repos.
+    """
+    return panel_point_v1(frame)
+
+
 def panel_quantile_v1(frame: pd.DataFrame) -> PanelQuantileForecastV1:
     """Validate and construct a V1 panel quantile forecast artifact."""
     return PanelQuantileForecastV1.from_frame(frame)
