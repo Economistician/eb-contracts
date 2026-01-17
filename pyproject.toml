@@ -46,9 +46,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/ElectricBarometer/eb-contracts"
-Repository = "https://github.com/ElectricBarometer/eb-contracts"
-Issues = "https://github.com/ElectricBarometer/eb-contracts/issues"
+Homepage = "https://github.com/Economistician/eb-contracts"
+Repository = "https://github.com/Economistician/eb-contracts"
+Issues = "https://github.com/Economistician/eb-contracts/issues"
 
 
 ######################################
