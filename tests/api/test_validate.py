@@ -6,7 +6,9 @@ import pytest
 from eb_contracts.api import validate as validate_module
 from eb_contracts.api.validate import (
     panel_demand_v1,
+    panel_point_forecast_v1,
     panel_point_v1,
+    panel_quantile_forecast_v1,
     panel_quantile_v1,
 )
 from eb_contracts.contracts._internal.runtime import set_validation_mode
@@ -114,10 +116,26 @@ def test_panel_point_v1_returns_point_artifact() -> None:
     assert artifact.frame is df
 
 
+def test_panel_point_forecast_v1_returns_point_artifact() -> None:
+    df = _panel_point_minimal()
+    with set_validation_mode("strict"):
+        artifact = panel_point_forecast_v1(df)
+    assert isinstance(artifact, PanelPointForecastV1)
+    assert artifact.frame is df
+
+
 def test_panel_quantile_v1_returns_quantile_artifact() -> None:
     df = _panel_quantile_minimal()
     with set_validation_mode("strict"):
         artifact = panel_quantile_v1(df)
+    assert isinstance(artifact, PanelQuantileForecastV1)
+    assert artifact.frame is df
+
+
+def test_panel_quantile_forecast_v1_returns_quantile_artifact() -> None:
+    df = _panel_quantile_minimal()
+    with set_validation_mode("strict"):
+        artifact = panel_quantile_forecast_v1(df)
     assert isinstance(artifact, PanelQuantileForecastV1)
     assert artifact.frame is df
 
@@ -128,10 +146,22 @@ def test_panel_point_v1_strict_raises_on_invalid_frame() -> None:
         panel_point_v1(df)
 
 
+def test_panel_point_forecast_v1_strict_raises_on_invalid_frame() -> None:
+    df = _panel_point_minimal(duplicate=True)
+    with set_validation_mode("strict"), pytest.raises(ContractViolationError):
+        panel_point_forecast_v1(df)
+
+
 def test_panel_quantile_v1_strict_raises_on_invalid_frame() -> None:
     df = _panel_quantile_minimal(q_out_of_range=True)
     with set_validation_mode("strict"), pytest.raises(ContractViolationError):
         panel_quantile_v1(df)
+
+
+def test_panel_quantile_forecast_v1_strict_raises_on_invalid_frame() -> None:
+    df = _panel_quantile_minimal(q_out_of_range=True)
+    with set_validation_mode("strict"), pytest.raises(ContractViolationError):
+        panel_quantile_forecast_v1(df)
 
 
 def test_panel_demand_v1_strict_validates_panel() -> None:
@@ -152,21 +182,39 @@ def test_panel_demand_v1_strict_raises_on_invalid_panel() -> None:
 ######################################
 
 
-def test_panel_point_forecast_v1_alias_delegates_to_panel_point_v1(
+def test_panel_point_v1_alias_delegates_to_panel_point_forecast_v1(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
-    Public API stability: panel_point_forecast_v1 should exist and delegate
-    to panel_point_v1 (no re-implementation).
+    Public API stability: panel_point_v1 should remain a backwards-compatible
+    alias that delegates to the canonical panel_point_forecast_v1.
     """
     sentinel = object()
 
     def _fake(_: pd.DataFrame) -> object:
         return sentinel
 
-    monkeypatch.setattr(validate_module, "panel_point_v1", _fake)
+    monkeypatch.setattr(validate_module, "panel_point_forecast_v1", _fake)
 
-    out = validate_module.panel_point_forecast_v1(pd.DataFrame())
+    out = validate_module.panel_point_v1(pd.DataFrame())
+    assert out is sentinel
+
+
+def test_panel_quantile_v1_alias_delegates_to_panel_quantile_forecast_v1(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Public API stability: panel_quantile_v1 should remain a backwards-compatible
+    alias that delegates to the canonical panel_quantile_forecast_v1.
+    """
+    sentinel = object()
+
+    def _fake(_: pd.DataFrame) -> object:
+        return sentinel
+
+    monkeypatch.setattr(validate_module, "panel_quantile_forecast_v1", _fake)
+
+    out = validate_module.panel_quantile_v1(pd.DataFrame())
     assert out is sentinel
 
 
@@ -187,6 +235,18 @@ def test_panel_point_v1_off_does_not_raise() -> None:
         panel_point_v1(df)
 
 
+def test_panel_point_forecast_v1_warn_does_not_raise() -> None:
+    df = _panel_point_minimal(duplicate=True)
+    with set_validation_mode("warn"):
+        panel_point_forecast_v1(df)
+
+
+def test_panel_point_forecast_v1_off_does_not_raise() -> None:
+    df = _panel_point_minimal(duplicate=True)
+    with set_validation_mode("off"):
+        panel_point_forecast_v1(df)
+
+
 def test_panel_quantile_v1_warn_does_not_raise() -> None:
     df = _panel_quantile_minimal(q_out_of_range=True)
     with set_validation_mode("warn"):
@@ -197,6 +257,18 @@ def test_panel_quantile_v1_off_does_not_raise() -> None:
     df = _panel_quantile_minimal(q_out_of_range=True)
     with set_validation_mode("off"):
         panel_quantile_v1(df)
+
+
+def test_panel_quantile_forecast_v1_warn_does_not_raise() -> None:
+    df = _panel_quantile_minimal(q_out_of_range=True)
+    with set_validation_mode("warn"):
+        panel_quantile_forecast_v1(df)
+
+
+def test_panel_quantile_forecast_v1_off_does_not_raise() -> None:
+    df = _panel_quantile_minimal(q_out_of_range=True)
+    with set_validation_mode("off"):
+        panel_quantile_forecast_v1(df)
 
 
 def test_panel_demand_v1_warn_still_raises_on_invalid_panel() -> None:
