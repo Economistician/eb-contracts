@@ -10,6 +10,10 @@ semantic invariants, and validation behavior for EB artifacts.
 This repository defines WHAT artifacts must look like and WHAT they mean.
 It does not define HOW they are evaluated, optimized, governed, or adjusted.
 
+STYLE
+- Inherits ecosystem-wide style and linting rules from
+  eb-integration/tooling/llm.style.txt via shared tooling.
+
 ---
 
 PRIMARY RESPONSIBILITIES
