@@ -10,7 +10,12 @@ from __future__ import annotations
 from importlib.metadata import PackageNotFoundError, version
 
 from eb_contracts.api.validate import (
+    cost_asymmetry_v1,
+    panel_demand_v1,
+    panel_point_forecast_v1,
+    panel_point_result_v1,
     panel_point_v1,
+    panel_quantile_forecast_v1,
     panel_quantile_v1,
 )
 from eb_contracts.contracts._internal.runtime import set_validation_mode
@@ -22,7 +27,12 @@ except PackageNotFoundError:  # pragma: no cover
 
 __all__ = [
     "__version__",
+    "cost_asymmetry_v1",
+    "panel_demand_v1",
+    "panel_point_forecast_v1",
+    "panel_point_result_v1",
     "panel_point_v1",
+    "panel_quantile_forecast_v1",
     "panel_quantile_v1",
     "set_validation_mode",
 ]
