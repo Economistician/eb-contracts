@@ -30,9 +30,9 @@ def _make_day_interval_frame() -> pd.DataFrame:
             "BUSINESS_DAY": ["2025-05-01", "2025-05-01", "2025-05-01"],
             "INTERVAL_30_INDEX": [0, 1, 2],
             "y": [None, 4.0, 8.0],
-            "is_observable": [True, True, True],
-            "is_possible": [True, True, True],
-            "is_structural_zero": [False, False, False],
+            "is_observable": pd.Series([True, True, True], dtype=bool),
+            "is_possible": pd.Series([True, True, True], dtype=bool),
+            "is_structural_zero": pd.Series([False, False, False], dtype=bool),
         }
     )
 
@@ -44,9 +44,9 @@ def _make_timestamp_frame() -> pd.DataFrame:
             "FORECAST_ENTITY_ID": [1, 1, 1],
             "ts": ["2025-05-01 00:00:00", "2025-05-01 00:30:00", "2025-05-01 01:00:00"],
             "y": [None, 4.0, 8.0],
-            "is_observable": [True, True, True],
-            "is_possible": [True, True, True],
-            "is_structural_zero": [False, False, False],
+            "is_observable": pd.Series([True, True, True], dtype=bool),
+            "is_possible": pd.Series([True, True, True], dtype=bool),
+            "is_structural_zero": pd.Series([False, False, False], dtype=bool),
         }
     )
 
@@ -170,6 +170,9 @@ def test_validate_timestamp_raises_on_unparsable_ts() -> None:
 
 def test_validate_raises_on_invalid_gate_domain() -> None:
     df = _make_day_interval_frame()
+    # Pandas 2.x will not set a str into a bool column; park the invalid token
+    # on an object view so the contract validator can reject the domain.
+    df["is_observable"] = df["is_observable"].astype(object)
     df.loc[0, "is_observable"] = "yes"  # invalid: must be True/False/NA only
 
     panel = PanelDemandV1.from_frame(
