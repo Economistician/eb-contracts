@@ -26,7 +26,7 @@ By separating data contracts and validation from computation and policy concerns
 
 ## Installation
 
-`eb-optimization` is distributed as a standard Python package.
+`eb-contracts` is distributed as a standard Python package.
 
 ```bash
 pip install eb-contracts
@@ -57,14 +57,9 @@ The example below illustrates a typical contract workflow using `eb-contracts`: 
 ```python
 import pandas as pd
 
-from eb_contracts.migrate import (
-    PanelPointColumns,
-    to_panel_point_v1,
-)
-from eb_contracts.validate import panel_point_v1
-from eb_contracts._runtime import set_validation_mode
+from eb_contracts import set_validation_mode
+from eb_contracts.api import PanelPointColumns, to_panel_point_v1
 
-# External (non-canonical) forecast data
 raw = pd.DataFrame(
     {
         "store": ["A", "A"],
@@ -77,7 +72,6 @@ raw = pd.DataFrame(
     }
 )
 
-# Explicitly map external columns to the EB contract
 columns = PanelPointColumns(
     entity_id="store",
     interval_start="timestamp",
@@ -85,11 +79,9 @@ columns = PanelPointColumns(
     y_pred="forecast",
 )
 
-# Enable strict validation at the contract boundary
 with set_validation_mode("strict"):
     forecast = to_panel_point_v1(raw, columns=columns)
 
-# `forecast` is now a validated PanelPointForecastV1 artifact
 print(type(forecast))
 ```
 
