@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-08-23
+
 ### Changed
 
 - Tightened README Overview; removed cloned Role section.
@@ -15,11 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Sorted module imports to satisfy ruff I001.
-
-## [0.2.2] - 2026-08-22
-
-### Fixed
-
 - Replaced `print()` warning statements with standard Python `logging.warning`.
 
 ### Added
