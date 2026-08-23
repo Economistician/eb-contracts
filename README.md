@@ -98,4 +98,4 @@ print(type(forecast))
 ## License
 
 BSD 3-Clause License.
-© 2025 Kyle Corrie.
+© 2026 Kyle Corrie.
