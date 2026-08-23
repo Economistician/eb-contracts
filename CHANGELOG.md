@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Tightened README Overview; removed cloned Role section.
 
+### Fixed
+
+- Sorted module imports to satisfy ruff I001.
+
 ## [0.2.x] - 2026-08-22
 
 ### Fixed

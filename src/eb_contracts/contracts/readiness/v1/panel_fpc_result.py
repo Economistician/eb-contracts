@@ -18,8 +18,8 @@ Design notes
 
 from __future__ import annotations
 
-import logging
 from dataclasses import dataclass
+import logging
 from typing import ClassVar, Final
 
 import pandas as pd

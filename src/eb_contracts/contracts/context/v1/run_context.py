@@ -10,9 +10,9 @@ V1 includes:
 
 from __future__ import annotations
 
-import logging
 from dataclasses import dataclass
 from datetime import datetime
+import logging
 from typing import ClassVar, Final
 
 from eb_contracts.contracts._internal.runtime import get_runtime
