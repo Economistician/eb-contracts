@@ -10,12 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Tightened README Overview; removed cloned Role section.
+- Changelog version header now matches `pyproject.toml` (`0.2.2`).
 
 ### Fixed
 
 - Sorted module imports to satisfy ruff I001.
 
-## [0.2.x] - 2026-08-22
+## [0.2.2] - 2026-08-22
 
 ### Fixed
 
