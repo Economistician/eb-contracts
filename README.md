@@ -8,19 +8,7 @@ Data contract and validation layer for the Electric Barometer ecosystem, definin
 
 ## Overview
 
-This repository contains the data contract and validation layer of the Electric Barometer ecosystem. It defines the canonical schemas, semantics, and invariants that govern how forecasts, costs, results, and contextual metadata are represented, validated, and exchanged across systems.
-
-Rather than producing forecasts, computing metrics, or applying optimization logic, this repository focuses on structural correctness and shared meaning: how data artifacts are shaped, what guarantees they provide, and how violations are detected and handled. By formalizing these contracts as versioned, validated artifacts, eb-contracts ensures that all downstream components operate on consistent, explicit, and auditable data interfaces—reducing ambiguity, preventing silent errors, and enabling long-term evolution without breaking consumers.
-
----
-
-## Role in the Electric Barometer Ecosystem
-
-`eb-contracts` defines the canonical data contracts and validation boundaries used throughout the Electric Barometer ecosystem. It is responsible for specifying how core data artifacts—such as forecasts, cost specifications, evaluation results, and run context—are structured, interpreted, and validated before they are consumed by downstream systems.
-
-This repository focuses exclusively on data shape, semantic consistency, and enforcement. It does not generate forecasts, compute metrics, select parameters, perform optimization, or orchestrate evaluation workflows. Those responsibilities are handled by adjacent layers in the ecosystem that produce predictions, compute metric values, calibrate parameters, or apply decision logic in operational settings.
-
-By separating data contracts and validation from computation and policy concerns, eb-contracts provides a stable, versioned interface layer that enables interoperability, reduces ambiguity, and ensures that all components of the Electric Barometer ecosystem operate on shared, explicit assumptions—supporting long-term evolution without breaking consumers.
+`eb-contracts` defines versioned schemas and validators for demand panels, forecasts, costs, and run context. It enforces shared structure and semantics; it does not compute metrics or train models.
 
 ---
 
