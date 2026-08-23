@@ -10,6 +10,7 @@ V1 includes:
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 from typing import ClassVar, Final
@@ -196,7 +197,11 @@ def _raise_or_warn(contract: str, violations: list[ContractViolation]) -> None:
         return
 
     if mode == "warn":
-        print(f"[eb-contracts] WARN: {contract}: " + "; ".join(v.message for v in violations))
+        logging.getLogger(__name__).warning(
+            "[eb-contracts] %s: %s",
+            contract,
+            "; ".join(v.message for v in violations),
+        )
         return
 
     raise ContractViolationError(contract=contract, violations=violations)

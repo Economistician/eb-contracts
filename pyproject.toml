@@ -20,7 +20,7 @@ requires-python = ">=3.11"
 license = { text = "BSD-3-Clause" }
 
 authors = [
-  { name = "Electric Barometer" },
+  { name = "Kyle Corrie (Economistician)", email = "kcorrie@economistician.com" }
 ]
 
 keywords = [
@@ -68,6 +68,16 @@ dev = [
 ]
 
 docs = [
+  "mkdocs>=1.6",
+  "mkdocs-material>=9.5",
+]
+
+# Combined extra to satisfy the "extras: all" CI contract.
+all = [
+  "pytest>=8",
+  "pre-commit>=3.7",
+  "ruff>=0.6",
+  "pyright>=1.1.380",
   "mkdocs>=1.6",
   "mkdocs-material>=9.5",
 ]
