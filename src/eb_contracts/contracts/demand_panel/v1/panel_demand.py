@@ -88,6 +88,40 @@ class PanelDemandV1:
         return obj
 
 
+def _as_series(obj: object) -> pd.Series:
+    """Return ``obj`` when it is already a Series; otherwise wrap once."""
+    if isinstance(obj, pd.Series):
+        return obj
+    return pd.Series(obj)
+
+
+def _datetime_isna(s: pd.Series) -> pd.Series:
+    """Null mask after datetime parse, skipping recast when already datetime64."""
+    if pd.api.types.is_datetime64_any_dtype(s.dtype):
+        return s.isna()
+    coerced = pd.to_datetime(s, errors="coerce")
+    if isinstance(coerced, pd.Series):
+        return coerced.isna()
+    return pd.Series(coerced, index=s.index).isna()
+
+
+def _is_canonical_numeric_dtype(dtype: object) -> bool:
+    """True when values are already numeric (excluding bool, which is numeric in NumPy)."""
+    if pd.api.types.is_bool_dtype(dtype):
+        return False
+    return bool(pd.api.types.is_numeric_dtype(dtype))
+
+
+def _as_numeric_series(s: pd.Series) -> pd.Series:
+    """Return ``s`` when already numeric; otherwise coerce without a redundant wrap."""
+    if _is_canonical_numeric_dtype(s.dtype):
+        return s
+    coerced = pd.to_numeric(s, errors="coerce")
+    if isinstance(coerced, pd.Series):
+        return coerced
+    return pd.Series(coerced, index=s.index)
+
+
 def _assert_nullable_bool_series(s: pd.Series, *, name: str) -> None:
     """
     Require that values are in {True, False, NA}.
@@ -165,26 +199,22 @@ def validate_panel_demand_v1(panel: PanelDemandV1) -> None:
         raise ValueError(f"Missing required columns: {missing}")
 
     # --- gates: nullable boolean domain (True/False/NA)
-    #
-    # NOTE: We explicitly coerce to Series for Pyright. Pandas typing can infer df[col]
-    # as Series | DataFrame | Unknown depending on key typing, even when "col" is str.
     _assert_nullable_bool_series(
-        pd.Series(df.loc[:, panel.is_observable_col]),
+        _as_series(df[panel.is_observable_col]),
         name=panel.is_observable_col,
     )
     _assert_nullable_bool_series(
-        pd.Series(df.loc[:, panel.is_possible_col]),
+        _as_series(df[panel.is_possible_col]),
         name=panel.is_possible_col,
     )
     _assert_nullable_bool_series(
-        pd.Series(df.loc[:, panel.is_structural_zero_col]),
+        _as_series(df[panel.is_structural_zero_col]),
         name=panel.is_structural_zero_col,
     )
 
     # --- target: numeric when present, nonnegative
-    y_raw = df[panel.y_col]
-    y = pd.to_numeric(y_raw, errors="coerce")
-    y_series = pd.Series(y, index=y_raw.index)
+    y_raw = _as_series(df[panel.y_col])
+    y_series = _as_numeric_series(y_raw)
 
     # If non-null originals became NaN after coercion => non-numeric values present.
     if bool(y_raw.notna().any()) and bool((y_series.isna() & y_raw.notna()).any()):
@@ -198,9 +228,8 @@ def validate_panel_demand_v1(panel: PanelDemandV1) -> None:
         if panel.periods_per_day is None:
             raise ValueError("periods_per_day must be provided for time_mode='day_interval'.")
 
-        idx_raw = df[panel.interval_index_col]
-        idx = pd.to_numeric(idx_raw, errors="coerce")
-        idx_series = pd.Series(idx, index=idx_raw.index)
+        idx_raw = _as_series(df[panel.interval_index_col])
+        idx_series = _as_numeric_series(idx_raw)
 
         # Disallow non-numeric junk where provided
         if bool((idx_series.isna() & idx_raw.notna()).any()):
@@ -215,14 +244,14 @@ def validate_panel_demand_v1(panel: PanelDemandV1) -> None:
                 f"[0, {panel.periods_per_day - 1}]."
             )
 
-        day = pd.to_datetime(df[panel.day_col], errors="coerce").dt.date
-        if bool(pd.Series(day, index=df.index).isna().any()):
+        day_raw = _as_series(df[panel.day_col])
+        if bool(_datetime_isna(day_raw).any()):
             raise ValueError(f"day_col {panel.day_col!r} must be date-like (parsable).")
 
     # --- timestamp mode checks (or optional timestamp column)
     if panel.ts_col:
-        ts = pd.to_datetime(df[panel.ts_col], errors="coerce")
-        if bool(pd.Series(ts, index=df.index).isna().any()):
+        ts_raw = _as_series(df[panel.ts_col])
+        if bool(_datetime_isna(ts_raw).any()):
             raise ValueError(f"ts_col {panel.ts_col!r} must be datetime-like (parsable).")
 
     # --- minimal governance semantics (agnostic)

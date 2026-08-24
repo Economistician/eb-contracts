@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Demand-panel unit fixtures use warehouse source column names (`FORECAST_ENTITY_KEY`, `BUSINESS_DATE`, `INTERVAL_INDEX`).
 
+### Performance
+
+- `validate_panel_demand_v1` and `validate_panel_fpc_result_v1` use vectorized `isin` domain checks and skip numeric/datetime recasts plus Series re-wraps when dtypes are already canonical.
+
 ## [0.2.2] - 2026-08-23
 
 ### Changed

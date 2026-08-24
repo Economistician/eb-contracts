@@ -22,6 +22,7 @@ from dataclasses import dataclass
 import logging
 from typing import ClassVar, Final
 
+import numpy as np
 import pandas as pd
 
 from eb_contracts.contracts._internal.runtime import get_runtime
@@ -111,6 +112,23 @@ class PanelFPCResultV1:
 ######################################
 
 
+def _is_canonical_numeric_dtype(dtype: object) -> bool:
+    """True when values are already numeric (excluding bool, which is numeric in NumPy)."""
+    if pd.api.types.is_bool_dtype(dtype):
+        return False
+    return bool(pd.api.types.is_numeric_dtype(dtype))
+
+
+def _as_numeric_series(s: pd.Series) -> pd.Series:
+    """Return ``s`` when already numeric; otherwise coerce without a redundant wrap."""
+    if _is_canonical_numeric_dtype(s.dtype):
+        return s
+    coerced = pd.to_numeric(s, errors="coerce")
+    if isinstance(coerced, pd.Series):
+        return coerced
+    return pd.Series(coerced, index=s.index)
+
+
 def validate_panel_fpc_result_v1(frame: pd.DataFrame) -> list[ContractViolation]:
     """Validate a DataFrame against the PanelFPCResultV1 contract."""
     violations: list[ContractViolation] = []
@@ -160,7 +178,7 @@ def validate_panel_fpc_result_v1(frame: pd.DataFrame) -> list[ContractViolation]
     # fpc_class domain check (only validate non-null)
     if PanelFPCResultV1.FPC_CLASS_COL in frame.columns:
         s = frame.loc[:, PanelFPCResultV1.FPC_CLASS_COL]
-        bad = s.dropna().astype(str).map(lambda x: x not in PanelFPCResultV1.ALLOWED_FPC_CLASSES)
+        bad = ~s.dropna().astype(str).isin(PanelFPCResultV1.ALLOWED_FPC_CLASSES)
         if bool(bad.any()):
             violations.append(
                 ContractViolation(
@@ -191,10 +209,7 @@ def validate_panel_fpc_result_v1(frame: pd.DataFrame) -> list[ContractViolation]
         if col not in frame.columns:
             continue
         s = frame.loc[:, col]
-
-        # Coerce; then immediately re-wrap as Series to keep Pyright on the rails.
-        coerced_raw = pd.to_numeric(s, errors="coerce")
-        coerced = pd.Series(coerced_raw, index=s.index)
+        coerced = _as_numeric_series(s)
 
         # If original non-null values became NaN after coercion => not numeric.
         if bool(s.notna().any()) and bool((pd.isna(coerced) & s.notna()).any()):
@@ -207,9 +222,7 @@ def validate_panel_fpc_result_v1(frame: pd.DataFrame) -> list[ContractViolation]
             continue
 
         # Disallow inf/-inf (only check non-null coerced entries)
-        non_null = pd.Series(pd.notna(coerced), index=coerced.index)
-        coerced_nn = pd.Series(coerced.loc[non_null], index=coerced.index[non_null])
-        if bool(coerced_nn.isin([float("inf"), float("-inf")]).any()):
+        if bool(np.isinf(coerced.to_numpy(dtype=float, na_value=np.nan)).any()):
             violations.append(
                 ContractViolation(
                     code="non_finite",
@@ -228,8 +241,7 @@ def validate_panel_fpc_result_v1(frame: pd.DataFrame) -> list[ContractViolation]
         if s.dropna().empty:
             continue
 
-        coerced_raw = pd.to_numeric(s, errors="coerce")
-        coerced = pd.Series(coerced_raw, index=s.index)
+        coerced = _as_numeric_series(s)
 
         if bool((pd.isna(coerced) & s.notna()).any()):
             violations.append(
@@ -240,7 +252,7 @@ def validate_panel_fpc_result_v1(frame: pd.DataFrame) -> list[ContractViolation]
             )
             continue
 
-        nn = pd.Series(pd.notna(coerced), index=coerced.index)
+        nn = pd.notna(coerced)
         if bool((coerced.loc[nn] < 0).any()):
             violations.append(
                 ContractViolation(
@@ -254,15 +266,12 @@ def validate_panel_fpc_result_v1(frame: pd.DataFrame) -> list[ContractViolation]
         PanelFPCResultV1.INTERVALS_COL in frame.columns
         and PanelFPCResultV1.SHORTFALL_INTERVALS_COL in frame.columns
     ):
-        a_raw = pd.to_numeric(frame.loc[:, PanelFPCResultV1.INTERVALS_COL], errors="coerce")
-        b_raw = pd.to_numeric(
-            frame.loc[:, PanelFPCResultV1.SHORTFALL_INTERVALS_COL], errors="coerce"
-        )
+        a_src = frame.loc[:, PanelFPCResultV1.INTERVALS_COL]
+        b_src = frame.loc[:, PanelFPCResultV1.SHORTFALL_INTERVALS_COL]
+        a = _as_numeric_series(a_src)
+        b = _as_numeric_series(b_src)
 
-        a = pd.Series(a_raw, index=frame.index)
-        b = pd.Series(b_raw, index=frame.index)
-
-        mask = pd.Series(pd.notna(a) & pd.notna(b), index=frame.index)
+        mask = pd.notna(a) & pd.notna(b)
         if bool(mask.any()) and bool((b.loc[mask] > a.loc[mask]).any()):
             violations.append(
                 ContractViolation(
