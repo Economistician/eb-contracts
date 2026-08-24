@@ -7,9 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-08-24
+
 ### Changed
 
 - Demand-panel unit fixtures use warehouse source column names (`FORECAST_ENTITY_KEY`, `BUSINESS_DATE`, `INTERVAL_INDEX`).
+
+### Fixed
+
+- Source distributions exclude the local `.pre-commit-home` cache so Hatchling does not ship hook environments to PyPI.
 
 ### Performance
 
