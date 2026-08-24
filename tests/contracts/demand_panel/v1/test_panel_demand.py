@@ -26,9 +26,9 @@ def _make_day_interval_frame() -> pd.DataFrame:
     return pd.DataFrame(
         {
             "STORE_ID": [101, 101, 101],
-            "FORECAST_ENTITY_ID": [1, 1, 1],
-            "BUSINESS_DAY": ["2025-05-01", "2025-05-01", "2025-05-01"],
-            "INTERVAL_30_INDEX": [0, 1, 2],
+            "FORECAST_ENTITY_KEY": [1, 1, 1],
+            "BUSINESS_DATE": ["2025-05-01", "2025-05-01", "2025-05-01"],
+            "INTERVAL_INDEX": [0, 1, 2],
             "y": [None, 4.0, 8.0],
             "is_observable": pd.Series([True, True, True], dtype=bool),
             "is_possible": pd.Series([True, True, True], dtype=bool),
@@ -41,7 +41,7 @@ def _make_timestamp_frame() -> pd.DataFrame:
     return pd.DataFrame(
         {
             "STORE_ID": [101, 101, 101],
-            "FORECAST_ENTITY_ID": [1, 1, 1],
+            "FORECAST_ENTITY_KEY": [1, 1, 1],
             "ts": ["2025-05-01 00:00:00", "2025-05-01 00:30:00", "2025-05-01 01:00:00"],
             "y": [None, 4.0, 8.0],
             "is_observable": pd.Series([True, True, True], dtype=bool),
@@ -56,11 +56,11 @@ def test_validate_day_interval_happy_path() -> None:
 
     panel = PanelDemandV1.from_frame(
         frame=df,
-        keys=["STORE_ID", "FORECAST_ENTITY_ID"],
+        keys=["STORE_ID", "FORECAST_ENTITY_KEY"],
         y_col="y",
         time_mode="day_interval",
-        day_col="BUSINESS_DAY",
-        interval_index_col="INTERVAL_30_INDEX",
+        day_col="BUSINESS_DATE",
+        interval_index_col="INTERVAL_INDEX",
         interval_minutes=30,
         periods_per_day=48,
         business_day_start_local_minutes=240,
@@ -79,11 +79,11 @@ def test_validate_raises_on_missing_required_columns() -> None:
 
     panel = PanelDemandV1.from_frame(
         frame=df,
-        keys=["STORE_ID", "FORECAST_ENTITY_ID"],
+        keys=["STORE_ID", "FORECAST_ENTITY_KEY"],
         y_col="y",
         time_mode="day_interval",
-        day_col="BUSINESS_DAY",
-        interval_index_col="INTERVAL_30_INDEX",
+        day_col="BUSINESS_DATE",
+        interval_index_col="INTERVAL_INDEX",
         interval_minutes=30,
         periods_per_day=48,
         validate=False,
@@ -95,15 +95,15 @@ def test_validate_raises_on_missing_required_columns() -> None:
 
 def test_validate_raises_on_invalid_interval_index_range() -> None:
     df = _make_day_interval_frame()
-    df.loc[0, "INTERVAL_30_INDEX"] = 48  # out of range for periods_per_day=48
+    df.loc[0, "INTERVAL_INDEX"] = 48  # out of range for periods_per_day=48
 
     panel = PanelDemandV1.from_frame(
         frame=df,
-        keys=["STORE_ID", "FORECAST_ENTITY_ID"],
+        keys=["STORE_ID", "FORECAST_ENTITY_KEY"],
         y_col="y",
         time_mode="day_interval",
-        day_col="BUSINESS_DAY",
-        interval_index_col="INTERVAL_30_INDEX",
+        day_col="BUSINESS_DATE",
+        interval_index_col="INTERVAL_INDEX",
         interval_minutes=30,
         periods_per_day=48,
         validate=False,
@@ -119,11 +119,11 @@ def test_validate_raises_on_negative_target_values() -> None:
 
     panel = PanelDemandV1.from_frame(
         frame=df,
-        keys=["STORE_ID", "FORECAST_ENTITY_ID"],
+        keys=["STORE_ID", "FORECAST_ENTITY_KEY"],
         y_col="y",
         time_mode="day_interval",
-        day_col="BUSINESS_DAY",
-        interval_index_col="INTERVAL_30_INDEX",
+        day_col="BUSINESS_DATE",
+        interval_index_col="INTERVAL_INDEX",
         interval_minutes=30,
         periods_per_day=48,
         validate=False,
@@ -138,7 +138,7 @@ def test_validate_timestamp_happy_path() -> None:
 
     panel = PanelDemandV1.from_frame(
         frame=df,
-        keys=["STORE_ID", "FORECAST_ENTITY_ID"],
+        keys=["STORE_ID", "FORECAST_ENTITY_KEY"],
         y_col="y",
         time_mode="timestamp",
         ts_col="ts",
@@ -157,7 +157,7 @@ def test_validate_timestamp_raises_on_unparsable_ts() -> None:
 
     panel = PanelDemandV1.from_frame(
         frame=df,
-        keys=["STORE_ID", "FORECAST_ENTITY_ID"],
+        keys=["STORE_ID", "FORECAST_ENTITY_KEY"],
         y_col="y",
         time_mode="timestamp",
         ts_col="ts",
@@ -177,11 +177,11 @@ def test_validate_raises_on_invalid_gate_domain() -> None:
 
     panel = PanelDemandV1.from_frame(
         frame=df,
-        keys=["STORE_ID", "FORECAST_ENTITY_ID"],
+        keys=["STORE_ID", "FORECAST_ENTITY_KEY"],
         y_col="y",
         time_mode="day_interval",
-        day_col="BUSINESS_DAY",
-        interval_index_col="INTERVAL_30_INDEX",
+        day_col="BUSINESS_DATE",
+        interval_index_col="INTERVAL_INDEX",
         interval_minutes=30,
         periods_per_day=48,
         validate=False,
@@ -198,11 +198,11 @@ def test_validate_raises_when_structural_zero_has_non_null_y() -> None:
 
     panel = PanelDemandV1.from_frame(
         frame=df,
-        keys=["STORE_ID", "FORECAST_ENTITY_ID"],
+        keys=["STORE_ID", "FORECAST_ENTITY_KEY"],
         y_col="y",
         time_mode="day_interval",
-        day_col="BUSINESS_DAY",
-        interval_index_col="INTERVAL_30_INDEX",
+        day_col="BUSINESS_DATE",
+        interval_index_col="INTERVAL_INDEX",
         interval_minutes=30,
         periods_per_day=48,
         validate=False,
@@ -220,11 +220,11 @@ def test_validate_raises_when_structural_zero_marked_observable() -> None:
 
     panel = PanelDemandV1.from_frame(
         frame=df,
-        keys=["STORE_ID", "FORECAST_ENTITY_ID"],
+        keys=["STORE_ID", "FORECAST_ENTITY_KEY"],
         y_col="y",
         time_mode="day_interval",
-        day_col="BUSINESS_DAY",
-        interval_index_col="INTERVAL_30_INDEX",
+        day_col="BUSINESS_DATE",
+        interval_index_col="INTERVAL_INDEX",
         interval_minutes=30,
         periods_per_day=48,
         validate=False,

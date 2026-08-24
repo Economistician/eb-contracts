@@ -73,9 +73,9 @@ def _panel_demand_minimal(*, missing_required: bool = False) -> PanelDemandV1:
     df = pd.DataFrame(
         {
             "STORE_ID": [101, 101],
-            "FORECAST_ENTITY_ID": [1, 1],
-            "BUSINESS_DAY": ["2025-05-01", "2025-05-01"],
-            "INTERVAL_30_INDEX": [0, 1],
+            "FORECAST_ENTITY_KEY": [1, 1],
+            "BUSINESS_DATE": ["2025-05-01", "2025-05-01"],
+            "INTERVAL_INDEX": [0, 1],
             "y": [None, 4.0],
             "is_observable": [True, True],
             "is_possible": [True, True],
@@ -88,11 +88,11 @@ def _panel_demand_minimal(*, missing_required: bool = False) -> PanelDemandV1:
 
     return PanelDemandV1.from_frame(
         frame=df,
-        keys=["STORE_ID", "FORECAST_ENTITY_ID"],
+        keys=["STORE_ID", "FORECAST_ENTITY_KEY"],
         y_col="y",
         time_mode="day_interval",
-        day_col="BUSINESS_DAY",
-        interval_index_col="INTERVAL_30_INDEX",
+        day_col="BUSINESS_DATE",
+        interval_index_col="INTERVAL_INDEX",
         interval_minutes=30,
         periods_per_day=48,
         business_day_start_local_minutes=240,
